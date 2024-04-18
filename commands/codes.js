@@ -1,44 +1,35 @@
 "use strict";
 
-let member_map = {}
-let lastUpdate = 0;
-
 module.exports = {
+    adduser: 'addusers',
     async addusers(msg, server, channel, user, isDM, cmd) {
         if (!Tools.isSysop(user.id)) return false;
         
         if (isDM) return channel.send('This command cannot be used in DMs as it may need to search a discord server for members.');
-
-        if (/[a-z]/i.test(msg)) { // there are discord usernames inside instead of userids
-            if (!lastUpdate) {
-                channel.send('Beginning to cache discord tags and userids of all users in the server. This may take a while.');
-                member_map = {};
-                let members = await this.guild.members.fetch();
-                for (const [id, member] of members.entries()) {
-                    let u = await Bot.getUser(id);
-                    member_map[u.username] = id;
-                }
-                channel.send('Caching complete.  Matching discord usernames with userids...');
-            }
-        }
-
+        
         let targets = msg.split(/[\n|,]/).map(arg => arg.trim());
+
+        channel.send('Processing... Please wait as the bot converts discord usernames into user IDs.');
 
         let userids = [];
         for (let target of targets) {
             if (/[a-z]/i.test(target)) {
                 // this is a discord tag.  convert to userid
-                let targetUser = member_map[target];
-                if (!targetUser) {
+                let targetUsers = await this.guild.members.search({ query: target, limit: 1 }); // returns a maps
+
+                if (!targetUsers.size) {
                     channel.send(`Unable to find user @${target}`);
                     continue;
                 }
 
-                userids.push(targetUser);
+                for (let id of targetUsers.keys()) {
+                    // first user is the one you want
+                    userids.push(id);
+                }
             } else {
                 target = target.replace(/[^0-9]/g, '');
                 if (!target || target.length < 10) continue;
-                userids.push(target)
+                userids.push(target);
             }
         }
 
@@ -47,7 +38,7 @@ module.exports = {
         }
         Db.save();
 
-        channel.send(`Added ${userids.length} of ${targets.length} users...`);
+        channel.send(`Added ${userids.length} of ${targets.length} users.  Please use !userlist to review the list of all the added users.`);
     },
 
     async userlist(msg, server, channel, user) {
@@ -72,6 +63,7 @@ module.exports = {
         }
     },
 
+    addcode: 'addcodes',
     addcodes(msg, server, channel, user) {
         if (!Tools.isSysop(user.id)) return false;
 
@@ -82,7 +74,7 @@ module.exports = {
         }
         Db.save();
 
-        channel.send('All codes have been saved.');
+        channel.send('All codes have been saved. Please use !userlist to review the list of all the saved codes.');
     },
 
     async codelist(msg, server, channel, user) {
@@ -160,4 +152,3 @@ module.exports = {
         channel.send('All saved users have been removed.');
     }
 }
-

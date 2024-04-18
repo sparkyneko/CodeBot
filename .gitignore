@@ -1,0 +1,12 @@
+/data
+/data/*
+
+/node_modules
+/node_modules/*
+
+config.js
+
+.DS_Store
+views/.DS_Store
+
+package-lock.json
