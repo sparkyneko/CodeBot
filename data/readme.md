@@ -1,0 +1,1 @@
+The bot's database files are stored here.
